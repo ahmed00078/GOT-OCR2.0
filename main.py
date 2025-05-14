@@ -25,11 +25,11 @@ app = FastAPI(
     version="2.0",
     contact={
         "name": "API Support",
-        "email": "noumankhanonai@gmail.com"
+        "email": "ahmedsidimohammed78@gmail.com"
     },
     license_info={
         "name": "Apache 2.0",
-        "url": "https://github.com/iammuhammadnoumankhan/FastAPI-GOT-OCR-2-Transformers/blob/main/LICENSE.txt"
+        "url": "https://github.com/ahmed00078/GOT-OCR2.0/blob/main/LICENSE.txt"
     }
 )
 
