@@ -37,14 +37,14 @@
             --space-2xl: 3rem;
 
             /* UI Elements */
-            --border-radius-sm: 0.375rem;
-            --border-radius: 0.5rem;
-            --border-radius-lg: 0.75rem;
-            --border-radius-xl: 1rem;
+            --border-radius-sm: 0.275rem;
+            --border-radius: 0.3rem;
+            --border-radius-lg: 0.55rem;
+            --border-radius-xl: 0.75rem;
             --box-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
             --box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --box-shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            --box-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --box-shadow-md: 0 5px 10px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --box-shadow-lg: 0 10px 15px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
             /* Transitions */
             --transition-fast: 150ms ease;
@@ -94,7 +94,7 @@
         }
 
         p {
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
         }
 
         /* Layout */
@@ -931,10 +931,16 @@
             submitBtn.innerHTML = '<div class="spinner"></div> Processing...';
 
             try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutes
+
                 const response = await fetch(PROCESS_ENDPOINT, {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    signal: controller.signal
                 });
+
+                clearTimeout(timeoutId);
 
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -945,7 +951,11 @@
                 displayResults(result);
                 showAlert('Processing completed successfully!', 'success');
             } catch (error) {
-                showAlert(`Error: ${error.message}`, 'error');
+                if (error.name === 'AbortError') {
+                    showAlert('Request timed out. Processing large images may take longer without a GPU.', 'warning');
+                } else {
+                    showAlert(`Error: ${error.message}`, 'error');
+                }
             } finally {
                 // Reset loading state
                 submitBtn.disabled = false;
