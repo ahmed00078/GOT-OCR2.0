@@ -16,6 +16,9 @@ from globe import ocr_types, ocr_colors, tasks, stop_str, title, description
 from transformers import AutoModelForImageTextToText, AutoProcessor
 from fastapi.middleware.cors import CORSMiddleware
 
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
+
 app = FastAPI(
     title="GOT-OCR 2.0 API",
     description=description,
@@ -42,9 +45,10 @@ app.add_middleware(
 model = None
 processor = None
 
+# In the load_model function, make device a global variable
 @app.on_event("startup")
 async def load_model():
-    global model, processor
+    global model, processor, device  # Add device to globals
     model_name = "stepfun-ai/GOT-OCR-2.0-hf"
     device = "cuda" if torch.cuda.is_available() else "cpu"
     
@@ -75,7 +79,7 @@ def process_image_sync(
         res = None
 
         if task == "Plain Text OCR":
-            inputs = processor(images, return_tensors="pt").to("cuda")
+            inputs = processor(images, return_tensors="pt").to(device)
             generate_ids = model.generate(
                 **inputs,
                 do_sample=False,
@@ -90,7 +94,7 @@ def process_image_sync(
             return res, None, unique_id
 
         elif task == "Format Text OCR":
-            inputs = processor(images, return_tensors="pt", format=True).to("cuda")
+            inputs = processor(images, return_tensors="pt", format=True).to(device)
             generate_ids = model.generate(
                 **inputs,
                 do_sample=False,
@@ -114,7 +118,7 @@ def process_image_sync(
             except:
                 raise ValueError("Invalid box format. Use [x1,y1,x2,y2]")
             
-            inputs = processor(images, return_tensors="pt", box=box).to("cuda")
+            inputs = processor(images, return_tensors="pt", box=box).to(device)
             generate_ids = model.generate(
                 **inputs,
                 do_sample=False,
@@ -131,7 +135,7 @@ def process_image_sync(
             if not ocr_color or ocr_color not in ocr_colors:
                 raise ValueError(f"Invalid color. Choose from {ocr_colors}")
             
-            inputs = processor(images, return_tensors="pt", color=ocr_color).to("cuda")
+            inputs = processor(images, return_tensors="pt", color=ocr_color).to(device)
             generate_ids = model.generate(
                 **inputs,
                 do_sample=False,
@@ -151,7 +155,7 @@ def process_image_sync(
                 format=True,
                 crop_to_patches=True,
                 max_patches=5
-            ).to("cuda")
+            ).to(device)
             generate_ids = model.generate(
                 **inputs,
                 do_sample=False,
@@ -171,7 +175,7 @@ def process_image_sync(
                 return_tensors="pt",
                 multi_page=True,
                 format=True
-            ).to("cuda")
+            ).to(device)
             generate_ids = model.generate(
                 **inputs,
                 do_sample=False,
@@ -320,6 +324,15 @@ async def process_ocr(
 
     return JSONResponse(content=response)
 
+# Mount the frontend directory to serve the HTML files
+app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
+# Optional: Mount the static directory for other static assets
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/")
+async def root():
+    return {"message": "GOT-OCR 2.0 API is running. Visit /frontend/index.html for the web interface or /docs for API documentation."}
+
 @app.get("/results/{result_id}", 
          summary="Retrieve formatted OCR results",
          response_description="HTML-rendered OCR output",)
@@ -327,6 +340,10 @@ async def get_result(result_id: str):
     """Retrieve HTML-rendered results by ID"""
     # Implement result storage/retrieval logic here
     return JSONResponse(content={"detail": "Result storage not implemented"}, status_code=501)
+
+@app.get("/health", response_description="Health check endpoint")
+async def health_check():
+    return JSONResponse(content={"status": "healthy"}, status_code=200)
 
 if __name__ == "__main__":
     import uvicorn
