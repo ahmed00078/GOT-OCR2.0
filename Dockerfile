@@ -22,8 +22,8 @@ COPY render_tools/ ./render_tools/
 
 # Download the model during the build process
 RUN python -c "from transformers import AutoModelForImageTextToText, AutoProcessor; \
-AutoProcessor.from_pretrained('stepfun-ai/GOT-OCR-2.0-hf'); \
-AutoModelForImageTextToText.from_pretrained('stepfun-ai/GOT-OCR-2.0-hf', low_cpu_mem_usage=True)"
+    AutoProcessor.from_pretrained('stepfun-ai/GOT-OCR-2.0-hf'); \
+    AutoModelForImageTextToText.from_pretrained('stepfun-ai/GOT-OCR-2.0-hf', low_cpu_mem_usage=True)"
 
 # Command to run the application
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
