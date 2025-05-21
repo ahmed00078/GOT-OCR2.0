@@ -39,13 +39,8 @@ COPY render_tools/ ./render_tools/
 
 # Download the model during the build process with optimisations pour CPU
 RUN python -c "from transformers import AutoModelForImageTextToText, AutoProcessor; \
-    import torch; \
-    device = 'cpu'; \
     AutoProcessor.from_pretrained('stepfun-ai/GOT-OCR-2.0-hf'); \
-    model = AutoModelForImageTextToText.from_pretrained('stepfun-ai/GOT-OCR-2.0-hf', low_cpu_mem_usage=True, device_map=device); \
-    # Optimisation pour CPU \
-    optimized_model = model.to('cpu').eval(); \
-    print('Model loaded and optimized for CPU')"
+    AutoModelForImageTextToText.from_pretrained('stepfun-ai/GOT-OCR-2.0-hf', low_cpu_mem_usage=True)"
 
 # Augmenter le timeout de uvicorn pour les traitements longs
 ENV UVICORN_TIMEOUT=300
